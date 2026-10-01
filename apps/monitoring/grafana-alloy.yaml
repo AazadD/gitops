@@ -1,0 +1,84 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana-alloy
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    chart: alloy
+    repoURL: https://grafana.github.io/helm-charts
+    targetRevision: 0.5.1
+    helm:
+      values: |
+        alloy:
+          configMap:
+            content: |
+              // 1. Discover all Kubernetes Pods
+              discovery.kubernetes "pods" {
+                role = "pod"
+              }
+
+              // 2. Discover Pod log paths
+              discovery.relabel "pod_logs" {
+                targets = discovery.kubernetes.pods.targets
+                rule {
+                  source_labels = ["__meta_kubernetes_namespace"]
+                  target_label  = "namespace"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_name"]
+                  target_label  = "pod"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_name"]
+                  target_label  = "container"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+                  separator     = "/"
+                  action        = "replace"
+                  replacement   = "/var/log/pods/*$1/*.log"
+                  target_label  = "__path__"
+                }
+              }
+
+              // 3. Tail log files from node disk
+              local.file_match "node_logs" {
+                path_targets = discovery.relabel.pod_logs.output
+              }
+
+              loki.source.file "log_scrape" {
+                targets    = local.file_match.node_logs.targets
+                forward_to = [loki.write.endpoint.receiver]
+              }
+
+              // 4. Ship Logs to Loki
+              loki.write "endpoint" {
+                endpoint {
+                  url = "http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push"
+                }
+              }
+
+              // 5. Scrape Prometheus Metrics
+              prometheus.scrape "k8s_pods" {
+                targets    = discovery.kubernetes.pods.targets
+                forward_to = [prometheus.remote_write.prom.receiver]
+              }
+
+              prometheus.remote_write "prom" {
+                endpoint {
+                  url = "http://prometheus-grafana-kube-pr-prometheus.monitoring.svc.cluster.local:9090/api/v1/write"
+                }
+              }
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

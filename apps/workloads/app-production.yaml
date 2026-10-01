@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-production
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/AazadD/devops-infra.git
+    targetRevision: main
+    path: helm/app-chart
+    helm:
+      values: |
+        replicaCount: 2
+        image:
+          repository: hawatharu/devops-app
+          tag: "production-latest"
+          pullPolicy: IfNotPresent
+        environment: production
+        ingress:
+          enabled: true
+          host: production.app.local
+        autoscaling:
+          enabled: true
+          minReplicas: 2
+          maxReplicas: 5
+          targetCPUUtilizationPercentage: 75
+        pdb:
+          enabled: true
+          minAvailable: 1
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: production
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
