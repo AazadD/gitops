@@ -16,7 +16,7 @@ spec:
         replicaCount: 2
         image:
           repository: hawatharu/devops-app
-          tag: "production-latest"
+          tag: "production-be2926adab5c5e4697d3de5105c704c689a9c6ec"
           pullPolicy: IfNotPresent
         environment: production
         ingress:
