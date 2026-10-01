@@ -16,7 +16,7 @@ spec:
         replicaCount: 2
         image:
           repository: faazad/devops-app
-          tag: "production-f896971447c470989ab9a362ec58e24dde7dfdbd"
+          tag: "production-3836b8a31917e3ae7538b43d5f674c4483a7ff2d"
           pullPolicy: IfNotPresent
         environment: production
         ingress:
