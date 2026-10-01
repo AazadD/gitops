@@ -15,8 +15,13 @@ spec:
       values: |
         replicaCount: 2
         image:
+<<<<<<< HEAD
           repository: hawatharu/devops-app
           tag: "production-c9d4910322b3f92f5f593dce06febcdf631b0ad7"
+=======
+          repository: faazad/devops-app
+          tag: "production-latest"
+>>>>>>> 3f74b5a (fix(REPONAME):)
           pullPolicy: IfNotPresent
         environment: production
         ingress:

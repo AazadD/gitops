@@ -15,7 +15,7 @@ spec:
       values: |
         replicaCount: 1
         image:
-          repository: hawatharu/devops-app
+          repository: faazad/devops-app
           tag: "staging-latest"
           pullPolicy: Always
         environment: staging
