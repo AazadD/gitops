@@ -16,7 +16,7 @@ spec:
         replicaCount: 1
         image:
           repository: faazad/devops-app
-          tag: "staging-dca28c5dc5e8eaca1faadc5c1a2c2cdec5267db5"
+          tag: "staging-12e5c547ec46b5ea6ce0362222b726f0763321b9"
           pullPolicy: Always
         environment: staging
         ingress:
