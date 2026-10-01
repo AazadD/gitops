@@ -8,8 +8,8 @@ metadata:
 spec:
   project: default
   source:
-    chart: kube-prometheus-stack
     repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
     targetRevision: 58.7.2
     helm:
       values: |
@@ -23,9 +23,12 @@ spec:
             - name: Loki
               type: loki
               access: proxy
-              url: http://loki-gateway.monitoring.svc.cluster.local
+              url: http://loki.monitoring.svc.cluster.local:3100
               jsonData:
                 maxLines: 1000
+        prometheus:
+          prometheusSpec:
+            enableRemoteWriteReceiver: true
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring

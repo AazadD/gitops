@@ -8,12 +8,26 @@ metadata:
 spec:
   project: default
   source:
-    chart: alloy
     repoURL: https://grafana.github.io/helm-charts
+    chart: alloy
     targetRevision: 0.5.1
     helm:
       values: |
         alloy:
+          extraVolumes:
+            - name: varlogpods
+              hostPath:
+                path: /var/log/pods
+            - name: varlibdocker
+              hostPath:
+                path: /var/lib/docker/containers
+          extraVolumeMounts:
+            - name: varlogpods
+              mountPath: /var/log/pods
+              readOnly: true
+            - name: varlibdocker
+              mountPath: /var/lib/docker/containers
+              readOnly: true
           configMap:
             content: |
               // 1. Discover all Kubernetes Pods
@@ -37,11 +51,16 @@ spec:
                   target_label  = "container"
                 }
                 rule {
-                  source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
-                  separator     = "/"
+                  source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_name", "__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+                  separator     = "_"
                   action        = "replace"
                   replacement   = "/var/log/pods/*$1/*.log"
                   target_label  = "__path__"
+                }
+                rule {
+                  action       = "replace"
+                  replacement  = "/var/log/pods/*/*/*.log"
+                  target_label = "__path__"
                 }
               }
 
@@ -55,10 +74,10 @@ spec:
                 forward_to = [loki.write.endpoint.receiver]
               }
 
-              // 4. Ship Logs to Loki
+              // 4. Ship Logs to Loki directly on 3100
               loki.write "endpoint" {
                 endpoint {
-                  url = "http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push"
+                  url = "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
                 }
               }
 
